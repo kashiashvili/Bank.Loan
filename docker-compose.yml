@@ -1,0 +1,48 @@
+﻿services:
+  seq:
+    image: datalust/seq:latest
+    ports:
+      - "5341:80"
+    environment:
+      - ACCEPT_EULA=Y
+    networks:
+      default:
+        aliases:
+          - seq
+  
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "Password123"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1434:1433"
+        
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    networks:
+      default:
+        aliases:
+          - rabbitmq
+      
+  bank.loan:
+    image: bank.loan
+    environment:
+      - Seq__ServerUrl=http://seq:5341
+      - RabbitMq__HostName=rabbitmq
+    build:
+      context: .
+      dockerfile: src/Bank.Loan.Api/Dockerfile
+    ports:
+      - "5002:80"
+      - "5003:443"
+    depends_on:
+      - db
+      - rabbitmq
+      - seq
